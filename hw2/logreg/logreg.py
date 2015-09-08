@@ -2,7 +2,8 @@
 #
 # Code from: https://github.com/ezubaric/ml-hw/
 #
-# Paul Boschert <paul.boschert@colorado.edu>
+# Modified By
+# Paul Boschert <paul@boschert.net>, <paul.boschert@colorado.edu>
 # CSCI 5622 - Machine Learning: Homework 2
 # 
 
@@ -11,6 +12,7 @@ import random
 from numpy import zeros, sign
 from math import exp, log
 from collections import defaultdict
+import numpy as np
 
 import argparse
 
@@ -55,7 +57,6 @@ class Example:
                 self.x[vocab.index(word)] += float(count)
                 self.nonzero[vocab.index(word)] = word
         self.x[0] = 1
-
 
 class LogReg:
     def __init__(self, num_features, mu, step=lambda x: 0.05):
@@ -107,7 +108,38 @@ class LogReg:
         :return: Return the new value of the regression coefficients
         """
 
-        # TODO: Implement updates in this function
+        # allow easier access to these variables
+        y = train_example.y
+        mu = self.mu
+        ada = self.step(iteration)
+
+        # calculate the pi value once
+        expVal = np.sum(np.multiply(self.beta, train_example.x))
+        pi_I = exp(expVal) / (1 + exp(expVal))
+
+        for (j, i) in zip(range(len(self.beta)), range(len(train_example.x))):
+            x_i = train_example.x[i]
+            
+            # only update the beta value if there exists relevant data, if there isn't any, increment the time since the last update
+            # This case is known as the zero-dimension
+            if int(x_i) is 0:
+                if i in self.last_update.keys():
+                    self.last_update[i] += 1
+                else:  # if there does not yet exist an entry in the dictionary, create one
+                    self.last_update[i] = 1
+            else:
+                # Use a power of 1 unless we haven't updated this particular feature in the last iteration
+                m_i = 1
+
+                # if we haven't updated the feature in the previous iteration, get the last time we did and add 1
+                if i in self.last_update.keys():
+                    m_i = self.last_update[i] + 1
+
+                self.beta[j] = (self.beta[j] + ada * (y - pi_I) * x_i) * np.power((1 - 2 * ada * mu), m_i)
+
+                # remove the key if it exists since we just updated it
+                if i in self.last_update.keys():
+                    del(self.last_update[i])
 
         return self.beta
 
@@ -143,9 +175,40 @@ def read_dataset(positive, negative, vocab, test_proportion=.1):
     return train, test, vocab
 
 def step_update(iteration):
-    # TODO (extra credit): Update this function to provide an
-    # effective iteration dependent step size
-    return 1.0
+    # from http://research.microsoft.com/pubs/192769/tricks-2012.pdf
+    #y_0 = .5
+    #return y_0 / (1.0 + y_0 / iteration);
+    return 1 / iteration;
+
+def printMinMaxPredictors(betas, vocab, num = 5):
+    # get the indices that would sort the array, beta
+    sortIndices = np.argsort(betas)
+
+    # we want to 
+    for i in range(1, len(sortIndices)):
+        indexInBeta = sortIndices[i]
+        if(betas[indexInBeta - 1] < 0 and betas[indexInBeta] > 0):
+            print("Worst Indicator Num Hockey, Word, Beta")
+            for j in list(reversed(range(num))):
+                index = sortIndices[i - j - 1]
+                print("%d, %s, %.6g" % (j, vocab[index], betas[index]))
+            print("Worst Indicator Num Baseball, Word, Beta")
+            for j in range(num):
+                index = sortIndices[i + j]
+                print("%d, %s, %.6g" % (j, vocab[index], betas[index]))
+            break
+
+    # print out the top 'num' words, these are the most negative beta values
+    print("Best Indicator Num Hockey, Word, Beta")
+    for i in range(num):
+        index = sortIndices[i]
+        print("%d, %s, %.6f" % (i, vocab[index], betas[index]))
+
+    # print out the last 'num' words, these are the most positive beta values
+    print("Best Indicator Num Baseball, Word, Beta")
+    for i in range(num):
+        index = sortIndices[len(sortIndices) - 1 - i]
+        print("%d, %s, %.6f" % (i, vocab[index], betas[index]))
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
@@ -175,10 +238,17 @@ if __name__ == "__main__":
     for pp in xrange(args.passes):
         for ii in train:
             update_number += 1
-            lr.sg_update(ii, update_number)
+            betas = lr.sg_update(ii, update_number)
 
             if update_number % 5 == 1:
+                # log probability, accuracy for the training data set
                 train_lp, train_acc = lr.progress(train)
+
+                # log probability, accuracy for the test data set
                 ho_lp, ho_acc = lr.progress(test)
                 print("Update %i\tTP %f\tHP %f\tTA %f\tHA %f" %
                       (update_number, train_lp, ho_lp, train_acc, ho_acc))
+
+    # print out the min/max predictors
+    #printMinMaxPredictors(betas, vocab, 5)
+
