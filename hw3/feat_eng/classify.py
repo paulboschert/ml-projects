@@ -1,9 +1,29 @@
 #!/usr/bin/env python
+#
+#
+# Starting code from:
+# http://www.cs.colorado.edu/~jbg/teaching/CSCI_5622/04.py
+# https://github.com/ezubaric/ml-hw/blob/master/feat_eng/classify.py
+# 
+# 
+# Modified By:
+# Paul Boschert <paul@boschert.net>, <paul.boschert@colorado.edu>
+# CSCI 5622 - Machine Learning: Homework 3
+#                                                                                                                         
 
 from csv import DictReader, DictWriter
 
 import numpy as np
 from numpy import array
+
+# TODO look into these libraries
+#from sklearn.metrics import confusion_matrix
+#from sklearn.feature_extraction.text import HashingVectorizer
+#from sklearn.metrics import accuracy_score
+#from nltk.corpus import wordnet as wn
+#from nltk.corpus import brown
+#from nltk.util import ngrams
+from sklearn.metrics import accuracy_score
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import SGDClassifier
@@ -44,14 +64,17 @@ if __name__ == "__main__":
     x_train = feat.train_feature(x[kTEXT_FIELD] for x in train)
     x_test = feat.test_feature(x[kTEXT_FIELD] for x in test)
 
-    y_train = array(list(labels.index(x[kTARGET_FIELD])
-                         for x in train))
+    y_train = array(list(labels.index(x[kTARGET_FIELD]) for x in train))
 
     # Train classifier
     lr = SGDClassifier(loss='log', penalty='l2', shuffle=True)
     lr.fit(x_train, y_train)
 
-    feat.show_top10(lr, labels)
+    feat.show_top10(lr, labels) # show the top 10 features used for classification
+
+    # show the accuracy
+    train_predictions = lr.predict(x_train)
+    print("Training Accuracy: %f" % accuracy_score(y_train, train_predictions))
 
     predictions = lr.predict(x_test)
     o = DictWriter(open("predictions.csv", 'w'), ["id", "cat"])
