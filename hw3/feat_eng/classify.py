@@ -11,10 +11,6 @@
 # CSCI 5622 - Machine Learning: Homework 3
 #                                                                                                                         
 
-from csv import DictReader, DictWriter
-
-import numpy as np
-from numpy import array
 
 # TODO look into these libraries
 #from sklearn.metrics import confusion_matrix
@@ -24,6 +20,14 @@ from numpy import array
 #from nltk.corpus import brown
 #from nltk.util import ngrams
 from sklearn.metrics import accuracy_score
+import argparse
+
+
+
+from csv import DictReader, DictWriter
+
+import numpy as np
+from numpy import array
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import SGDClassifier
@@ -51,6 +55,17 @@ class Featurizer:
         print("")
 
 if __name__ == "__main__":
+    # initialize the argument parser and define the arguments
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument('--word', default=False, action="store_true",
+                        help="Use the words of the text as features")
+    parser.add_argument('--page', default=False, action="store_true",
+                        help="Use the page as a feature, this appears to be the author of the quote")
+    parser.add_argument('--trope', default=False, action="store_true",
+                        help="Use the trope as a feature, this appears to be the movie/show that the quote is about")
+
+    flags = parser.parse_args()
+
 
     # Cast to list to keep it all in memory
     train = list(DictReader(open("../data/spoilers/train.csv", 'r')))
