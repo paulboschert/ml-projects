@@ -2,4 +2,29 @@ Features:
   - Try using the 'page'
   - Try using the 'trope'
   - Try using the specific keywords:
-    - "turned out", "ended up", "in fact", "however", "alert", "spoiler"
+    turned out
+    ended up
+    in fact
+    however
+    alert
+    spoiler
+    in the last
+    last episode
+    final episode
+    season episode
+    resolution
+    series finale
+    series
+    reveals
+    dies
+    die
+    dead
+    in the future
+    ahead of
+    dying
+    kills
+    learn
+    survived
+    In 02x02
+    In .... episode
+
