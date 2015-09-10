@@ -43,38 +43,51 @@ class Featurizer:
         return self.vectorizer.transform(examples)
 
     def show_top10(self, classifier, categories):
+        print("Top 10 features used for each classification")
         feature_names = np.asarray(self.vectorizer.get_feature_names())
         for i, category in enumerate(categories):
             top10 = np.argsort(classifier.coef_[i])[-10:]
             print("%s: %s" % (category, " ".join(feature_names[top10])))
+        print("")
 
 if __name__ == "__main__":
 
     # Cast to list to keep it all in memory
     train = list(DictReader(open("../data/spoilers/train.csv", 'r')))
+    # since we don't have y values for our testing set, get an approximation for our testing
+    # set by splitting our training set in two and using the first half to classify and the
+    # second half to test the accuracy
+
+    train_a = train[:len(train) / 2] # 1st half
+    train_b = train[len(train) / 2:] # 2nd half
+
     test = list(DictReader(open("../data/spoilers/test.csv", 'r')))
 
     feat = Featurizer()
 
     labels = []
-    for line in train:
+    for line in train_a:
         if not line[kTARGET_FIELD] in labels:
             labels.append(line[kTARGET_FIELD])
 
-    x_train = feat.train_feature(x[kTEXT_FIELD] for x in train)
+    x_train_a = feat.train_feature(x[kTEXT_FIELD] for x in train_a)
+    x_train_b = feat.test_feature(x[kTEXT_FIELD] for x in train_b)
     x_test = feat.test_feature(x[kTEXT_FIELD] for x in test)
 
-    y_train = array(list(labels.index(x[kTARGET_FIELD]) for x in train))
+    y_train_a = array(list(labels.index(x[kTARGET_FIELD]) for x in train_a))
+    y_train_b = array(list(labels.index(x[kTARGET_FIELD]) for x in train_b))
 
     # Train classifier
     lr = SGDClassifier(loss='log', penalty='l2', shuffle=True)
-    lr.fit(x_train, y_train)
+    lr.fit(x_train_a, y_train_a)
 
     feat.show_top10(lr, labels) # show the top 10 features used for classification
 
     # show the accuracy
-    train_predictions = lr.predict(x_train)
-    print("Training Accuracy: %f" % accuracy_score(y_train, train_predictions))
+    train_predictions_a = lr.predict(x_train_a)
+    print("Training Accuracy A: %f" % accuracy_score(y_train_a, train_predictions_a))
+    train_predictions_b = lr.predict(x_train_b)
+    print("Training Accuracy B (testing simulation): %f" % accuracy_score(y_train_b, train_predictions_b))
 
     predictions = lr.predict(x_test)
     o = DictWriter(open("predictions.csv", 'w'), ["id", "cat"])
