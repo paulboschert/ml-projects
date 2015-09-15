@@ -59,6 +59,23 @@ def queryGenre(title):
     # return the genre found
     return genre
 
+def addGenres(dataset, field, X, cached_genres):
+    for x, i in zip(dataset, range(len(dataset))):
+        #if i % 100 == 0:
+        #    print("Collecting genres: %d / %d complete" % (i, len(dataset)))
+
+        title = camelCaseConvert(x[field])
+
+        # query the genre if it doesn't exist in the cached dictionary
+        if title not in cached_genres:
+            #print("'%s' not found, querying..." % title)
+            cached_genres[title] = queryGenre(title)
+
+        if title in cached_genres:
+            X[i] = ' '.join((X[i], cached_genres[title]))
+
+    return (X, cached_genres)
+
 class Analyzer:
     def __init__(self, word):
         self.word = word
@@ -103,16 +120,16 @@ class Featurizer:
 if __name__ == "__main__":
     # initialize the argument parser and define the arguments
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument('--word', default=False, action="store_true",
-                        help="Use the words of the text as features")
-    parser.add_argument('--page', default=False, action="store_true",
-                        help="Use the page as a feature, this appears to be the movie/show that the quote is about")
-    parser.add_argument('--trope', default=False, action="store_true",
-                        help="Use the trope as a feature, this appears to be the author of the quote")
-    parser.add_argument('--split', default=False, action="store_true",
-                        help="Use the trope as a feature, this appears to be the movie/show that the quote is about")
-    parser.add_argument('--genre', default=False, action="store_true",
-                        help="Add the genre of the based on the trope")
+    parser.add_argument('--word', default = False, action = "store_true",
+                        help = "Use the words of the text as features")
+    parser.add_argument('--page', default = False, action = "store_true",
+                        help = "Use the page as a feature, this appears to be the movie/show that the quote is about")
+    parser.add_argument('--trope', default = False, action = "store_true",
+                        help = "Use the trope as a feature, this appears to be the author of the quote")
+    parser.add_argument('--split', default = False, action = "store_true",
+                        help = "Use the trope as a feature, this appears to be the movie/show that the quote is about")
+    parser.add_argument('--genre', default = False, action = "store_true",
+                        help = "Add the genre of the based on the trope")
 
     flags = parser.parse_args()
 
@@ -137,7 +154,6 @@ if __name__ == "__main__":
 
     #print("Label set: %s" % str(labels))
 
-    
     if flags.trope and flags.page:
         x_train_all = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in train))
     elif flags.trope:
@@ -150,19 +166,7 @@ if __name__ == "__main__":
     y_train_all = array(list(labels.index(x[kTARGET_FIELD]) for x in train))
 
     if flags.genre:
-        for x, i in zip(train, range(len(train))):
-            if i % 100 == 0:
-                print("Collecting TRAIN genres: %d / %d complete" % (i, len(train)))
-
-            title = camelCaseConvert(x[kPAGE_FIELD])
-
-            # query the genre if it doesn't exist in the cached dictionary
-            if title not in cached_genres:
-                print("'%s' not found, querying..." % title)
-                cached_genres[title] = queryGenre(title)
-
-            if title in cached_genres:
-                x_train_all[i] = ' '.join((x_train_all[i], cached_genres[title]))
+        (x_train_all, cached_genres) = addGenres(train, kPAGE_FIELD, x_train_all, cached_genres)
 
     # deal with the test data set
     if flags.trope and flags.page:
@@ -175,19 +179,7 @@ if __name__ == "__main__":
         x_test = array(list((x[kTEXT_FIELD] for x in test)))
 
     if flags.genre:
-        for x, i in zip(test, range(len(test))):
-            if i % 100 == 0:
-                print("Collecting TEST genres: %d / %d complete" % (i, len(test)))
-
-            title = camelCaseConvert(x[kPAGE_FIELD])
-
-            # query the genre if it doesn't exist in the cached dictionary
-            if title not in cached_genres:
-                print("'%s' not found, querying..." % title)
-                cached_genres[title] = queryGenre(title)
-
-            if title in cached_genres:
-                x_test[i] = ' '.join((x_train_all[i], cached_genres[title]))
+        (x_test, cached_genres) = addGenres(test, kPAGE_FIELD, x_test, cached_genres)
 
     # write out the cached genre lookup dictionary
     #o = DictWriter(open("../data/spoilers/cached_genres.csv", 'w'), ["page", "genre"])
@@ -200,8 +192,8 @@ if __name__ == "__main__":
     # set by splitting our training set in two and using the first part to classify and the
     # second part to validate the accuracy
     if flags.split:
-        x_train, x_validate, y_train, y_validate = train_test_split(x_train_all, y_train_all,
-                                                                    random_state = 1)
+        x_train, x_validate, y_train, y_validate = train_test_split(x_train_all, y_train_all, test_size = .25,
+                                                                    random_state = 42)
     else:
         x_train = x_train_all
         y_train = y_train_all
@@ -213,7 +205,6 @@ if __name__ == "__main__":
 
     # Get features
     analyzer = Analyzer(flags.word)
-
     feat = Featurizer(analyzer)
 
     # train
