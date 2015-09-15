@@ -48,25 +48,14 @@ def camelCaseConvert(value):
     return re.sub('([a-z0-9])([A-Z])', r'\1 \2', s1).lower()
 
 class Analyzer:
-    def __init__(self, word, page, trope):
+    def __init__(self, word):
         self.word = word
-        self.page = page
-        self.trope = trope
 
     def __call__(self, feature_string):
         feats = features_string.split()
 
         if self.word:
             yield feats[0]
-
-        if self.page:
-            for i in [x for x in feats if x.startswith("P:")]:
-                yield i
-
-        if self.trope:
-            for i in [x for x in feats if x.startswith("T:")]:
-                yield i
-
 
 class LemmaTokenizer(object):
     def __init__(self):
@@ -124,9 +113,6 @@ if __name__ == "__main__":
     """
     Read in data
     """
-    # since we don't have y values for our testing set, get an approximation for our testing
-    # set by splitting our training set in two and using the first half to classify and the
-    # second half to test the accuracy
     train = list(DictReader(open("../data/spoilers/train.csv", 'r')))
     test = list(DictReader(open("../data/spoilers/test.csv", 'r')))
 
@@ -138,7 +124,14 @@ if __name__ == "__main__":
     #print("Label set: %s" % str(labels))
 
     
-    x_train_all = array(list((x[kTEXT_FIELD] for x in train)))
+    if flags.trope and flags.page:
+        x_train_all = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in train))
+    elif flags.trope:
+        x_train_all = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in train))
+    elif flags.page:
+        x_train_all = array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in train))
+    else:
+        x_train_all = array(list((x[kTEXT_FIELD] for x in train)))
 
     y_train_all = array(list(labels.index(x[kTARGET_FIELD]) for x in train))
 
@@ -158,7 +151,7 @@ if __name__ == "__main__":
     print("Size of validation data set: %s" % len(y_validate))
 
     # Get features
-    analyzer = Analyzer(flags.word, flags.page, flags.trope)
+    analyzer = Analyzer(flags.word)
 
     feat = Featurizer(analyzer)
 
@@ -169,7 +162,14 @@ if __name__ == "__main__":
         x_validate = feat.test_feature(x_validate)
 
     # deal with the test data set
-    x_test = array(list((x[kTEXT_FIELD] for x in test)))
+    if flags.trope and flags.page:
+        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in test))
+    elif flags.trope:
+        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in test))
+    elif flags.page:
+        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in test))
+    else:
+        x_test = array(list((x[kTEXT_FIELD] for x in test)))
 
     x_test = feat.test_feature(x_test)
 
