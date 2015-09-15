@@ -23,6 +23,7 @@ from sklearn.metrics import accuracy_score
 import argparse
 from nltk.stem import WordNetLemmatizer
 from nltk import word_tokenize
+from sklearn.cross_validation import train_test_split
 import re
 
 
@@ -127,46 +128,63 @@ if __name__ == "__main__":
     # set by splitting our training set in two and using the first half to classify and the
     # second half to test the accuracy
     train = list(DictReader(open("../data/spoilers/train.csv", 'r')))
-    train_a = train[:len(train) / 2] # 1st half
-    train_b = train[len(train) / 2:] # 2nd half
-
     test = list(DictReader(open("../data/spoilers/test.csv", 'r')))
+
+    labels = []
+    for line in train:
+        if not line[kTARGET_FIELD] in labels:
+            labels.append(line[kTARGET_FIELD])
+
+    #print("Label set: %s" % str(labels))
+
+    
+    x_train_all = array(list((x[kTEXT_FIELD] for x in train)))
+
+    y_train_all = array(list(labels.index(x[kTARGET_FIELD]) for x in train))
+
+    # since we don't have y values for our testing set, get an approximation for our testing
+    # set by splitting our training set in two and using the first part to classify and the
+    # second part to validate the accuracy
+    if flags.split:
+        x_train, x_validate, y_train, y_validate = train_test_split(x_train_all, y_train_all,
+                                                                    random_state = 1)
+    else:
+        x_train = x_train_all
+        y_train = y_train_all
+        x_validate = []
+        y_validate = []
+
+    print("Size of training data set: %s" % len(y_train))
+    print("Size of validation data set: %s" % len(y_validate))
 
     # Get features
     analyzer = Analyzer(flags.word, flags.page, flags.trope)
 
     feat = Featurizer(analyzer)
 
-    labels = []
-    for line in train_a:
-        if not line[kTARGET_FIELD] in labels:
-            labels.append(line[kTARGET_FIELD])
+    x_train = feat.train_feature(x_train)
 
-    print("Label set: %s" % str(labels))
-    x_train_a = feat.train_feature(x[kTEXT_FIELD] for x in train_a)
-    x_train_b = feat.test_feature(x[kTEXT_FIELD] for x in train_b)
-    x_test = feat.test_feature(x[kTEXT_FIELD] for x in test)
-    #x_train_a = feat.train_feature(''.join([x[kTEXT_FIELD], x[kTROPE_FIELD]]) for x in train_a)
-    #x_train_b = feat.test_feature(''.join([x[kTEXT_FIELD], x[kTROPE_FIELD]]) for x in train_b)
-    #x_test = feat.test_feature(''.join([x[kTEXT_FIELD], x[kTROPE_FIELD]]) for x in test)
+    if flags.split:
+        # deal with validation test data
+        x_validate = feat.test_feature(x_validate)
 
-    y_train_a = array(list(labels.index(x[kTARGET_FIELD]) for x in train_a))
-    y_train_b = array(list(labels.index(x[kTARGET_FIELD]) for x in train_b))
+    # deal with the test data set
+    x_test = array(list((x[kTEXT_FIELD] for x in test)))
 
-    print(len(train), len(y_train_a))
-    print(set(y_train_a))
+    x_test = feat.test_feature(x_test)
 
     # Train classifier
     lr = SGDClassifier(loss='log', penalty='l2', shuffle=True)
-    lr.fit(x_train_a, y_train_a)
+    lr.fit(x_train, y_train)
 
     feat.show_top10(lr, labels) # show the top 10 features used for classification
 
-    # show the accuracy
-    train_predictions_a = lr.predict(x_train_a)
-    print("Training Accuracy A: %f" % accuracy_score(y_train_a, train_predictions_a))
-    train_predictions_b = lr.predict(x_train_b)
-    print("Training Accuracy B (testing simulation): %f" % accuracy_score(y_train_b, train_predictions_b))
+    # show the training accuracy
+    print("  Training Accuracy: %f" % accuracy_score(y_train, lr.predict(x_train)))
+
+    if flags.split:
+        # show the validation accuracy
+        print("Validation Accuracy: %f" % accuracy_score(y_validate, lr.predict(x_validate)))
 
     # write out the predicitons
     predictions = lr.predict(x_test)
