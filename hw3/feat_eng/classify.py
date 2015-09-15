@@ -36,9 +36,26 @@ kTARGET_FIELD = 'spoiler'
 kTEXT_FIELD = 'sentence'
 
 
-class Featurizer:
-    def __init__(self):
-        self.vectorizer = CountVectorizer()
+class Analyzer:
+    def __init__(self, word, page, trope):
+        self.word = word
+        self.page = page
+        self.trope = trope
+
+    def __call__(self, feature_string):
+        feats = features_string.split()
+
+        if self.word:
+            yield feats[0]
+
+        if self.page:
+            for i in [x for x in feats if x.startswith("P:")]:
+                yield i
+
+        if self.trope:
+            for i in [x for x in feats if x.startswith("T:")]:
+                yield i
+
 
     def train_feature(self, examples):
         return self.vectorizer.fit_transform(examples)
@@ -48,6 +65,7 @@ class Featurizer:
 
     def show_top10(self, classifier, categories):
         print("Top 10 features used for each classification")
+        print("--------------------------------------------")
         feature_names = np.asarray(self.vectorizer.get_feature_names())
         for i, category in enumerate(categories):
             top10 = np.argsort(classifier.coef_[i])[-10:]
