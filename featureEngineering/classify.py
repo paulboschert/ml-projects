@@ -110,11 +110,13 @@ if __name__ == "__main__":
     parser.add_argument('--word', default=False, action="store_true",
                         help="Use the words of the text as features")
     parser.add_argument('--page', default=False, action="store_true",
-                        help="Use the page as a feature, this appears to be the author of the quote")
+                        help="Use the page as a feature, this appears to be the movie/show that the quote is about")
     parser.add_argument('--trope', default=False, action="store_true",
-                        help="Use the trope as a feature, this appears to be the movie/show that the quote is about")
+                        help="Use the trope as a feature, this appears to be the author of the quote")
     parser.add_argument('--split', default=False, action="store_true",
                         help="Use the trope as a feature, this appears to be the movie/show that the quote is about")
+    parser.add_argument('--genre', default=False, action="store_true",
+                        help="Add the genre of the based on the trope")
 
     flags = parser.parse_args()
 
