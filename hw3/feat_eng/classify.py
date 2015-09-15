@@ -113,8 +113,9 @@ if __name__ == "__main__":
 
     flags = parser.parse_args()
 
-
-    # Cast to list to keep it all in memory
+    """
+    Read in data
+    """
     train = list(DictReader(open("../data/spoilers/train.csv", 'r')))
     # since we don't have y values for our testing set, get an approximation for our testing
     # set by splitting our training set in two and using the first half to classify and the
@@ -135,9 +136,13 @@ if __name__ == "__main__":
         if not line[kTARGET_FIELD] in labels:
             labels.append(line[kTARGET_FIELD])
 
+    print("Label set: %s" % str(labels))
     x_train_a = feat.train_feature(x[kTEXT_FIELD] for x in train_a)
     x_train_b = feat.test_feature(x[kTEXT_FIELD] for x in train_b)
     x_test = feat.test_feature(x[kTEXT_FIELD] for x in test)
+    #x_train_a = feat.train_feature(''.join([x[kTEXT_FIELD], x[kTROPE_FIELD]]) for x in train_a)
+    #x_train_b = feat.test_feature(''.join([x[kTEXT_FIELD], x[kTROPE_FIELD]]) for x in train_b)
+    #x_test = feat.test_feature(''.join([x[kTEXT_FIELD], x[kTROPE_FIELD]]) for x in test)
 
     y_train_a = array(list(labels.index(x[kTARGET_FIELD]) for x in train_a))
     y_train_b = array(list(labels.index(x[kTARGET_FIELD]) for x in train_b))
