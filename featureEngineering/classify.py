@@ -12,12 +12,6 @@
 #                                                                                                                         
 
 
-# TODO look into these libraries
-#from sklearn.metrics import confusion_matrix
-#from sklearn.feature_extraction.text import HashingVectorizer
-#from sklearn.metrics import accuracy_score
-#from nltk.corpus import wordnet as wn
-#from nltk.corpus import brown
 #from nltk.util import ngrams
 from sklearn.metrics import accuracy_score
 import argparse
@@ -56,12 +50,6 @@ class Analyzer:
 
         if self.word:
             yield feats[0]
-
-class LemmaTokenizer(object):
-    def __init__(self):
-        self.wnl = WordNetLemmatizer()
-    def __call__(self, sentence):
-        return [self.wnl.lemmatize(t) for t in word_tokenize(sentence)]
 
 class Featurizer:
     def __init__(self, analyzer = None):
