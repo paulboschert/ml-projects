@@ -1,4 +1,7 @@
 Features:
+  - Strip stop words
+    \.html
+
   - Try using the 'page'
   - Try using the 'trope'
   - Try using the specific keywords:
