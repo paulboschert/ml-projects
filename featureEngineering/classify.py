@@ -23,6 +23,7 @@ import json
 import urllib
 
 from csv import DictReader, DictWriter
+import csv
 
 import numpy as np
 from numpy import array
@@ -39,6 +40,24 @@ kTROPE_FIELD = 'trope'
 def camelCaseConvert(value):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1 \2', value)
     return re.sub('([a-z0-9])([A-Z])', r'\1 \2', s1).lower()
+
+def queryGenre(title):
+    genre = ""
+    for year in range(1888, 2015):
+        if str(year) in title:
+            title = title.replace(str(year), " ")
+
+    # query the open movie database
+    queryURL = "http://www.omdbapi.com/?t=" + title + "&tomatoes=true"
+    response = urllib.urlopen(queryURL).read()
+    movieInfo = json.loads(response)
+
+    # if a genre is defined for this title, return the first one listed (presumably this is the highest priority)
+    if 'Genre' in movieInfo:
+        genre = movieInfo['Genre'].split()[0].replace(',', '')
+
+    # return the genre found
+    return genre
 
 class Analyzer:
     def __init__(self, word):
@@ -103,6 +122,14 @@ if __name__ == "__main__":
     train = list(DictReader(open("../data/spoilers/train.csv", 'r')))
     test = list(DictReader(open("../data/spoilers/test.csv", 'r')))
 
+    # read in the cached genre file if the flag is specified
+    if flags.genre:
+        reader = csv.reader(open("../data/spoilers/cached_genres.csv", 'r'))
+        cached_genres = {}
+        for row in reader:
+            key, value = row
+            cached_genres[key] = value;
+
     labels = []
     for line in train:
         if not line[kTARGET_FIELD] in labels:
@@ -122,26 +149,52 @@ if __name__ == "__main__":
 
     y_train_all = array(list(labels.index(x[kTARGET_FIELD]) for x in train))
 
-    cached_genres = {}
     if flags.genre:
         for x, i in zip(train, range(len(train))):
             if i % 100 == 0:
-                print("Collecting training genres: %d / %d complete" % (i, len(train)))
+                print("Collecting TRAIN genres: %d / %d complete" % (i, len(train)))
 
             title = camelCaseConvert(x[kPAGE_FIELD])
 
-            for y in range(1900,2015):
-                    if str(y) in title:
-                        title = title.replace(str(y)," ")
+            # query the genre if it doesn't exist in the cached dictionary
+            if title not in cached_genres:
+                print("'%s' not found, querying..." % title)
+                cached_genres[title] = queryGenre(title)
 
-            url = "http://www.omdbapi.com/?t=" + title + "&tomatoes=true"
-            response = urllib.urlopen(url).read()
-            movieInfo = json.loads(response)
-            if 'Genre' in movieInfo:
-                genre = movieInfo['Genre'].split()[0].replace(',', '')
-                cached_genres[str(title)] = genre
-                x_train_all[i] = ' '.join((x_train_all[i], genre))
+            if title in cached_genres:
+                x_train_all[i] = ' '.join((x_train_all[i], cached_genres[title]))
 
+    # deal with the test data set
+    if flags.trope and flags.page:
+        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in test))
+    elif flags.trope:
+        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in test))
+    elif flags.page:
+        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in test))
+    else:
+        x_test = array(list((x[kTEXT_FIELD] for x in test)))
+
+    if flags.genre:
+        for x, i in zip(test, range(len(test))):
+            if i % 100 == 0:
+                print("Collecting TEST genres: %d / %d complete" % (i, len(test)))
+
+            title = camelCaseConvert(x[kPAGE_FIELD])
+
+            # query the genre if it doesn't exist in the cached dictionary
+            if title not in cached_genres:
+                print("'%s' not found, querying..." % title)
+                cached_genres[title] = queryGenre(title)
+
+            if title in cached_genres:
+                x_test[i] = ' '.join((x_train_all[i], cached_genres[title]))
+
+    # write out the cached genre lookup dictionary
+    #o = DictWriter(open("../data/spoilers/cached_genres.csv", 'w'), ["page", "genre"])
+    #o.writeheader()
+    #for title, genre in zip(cached_genres.keys(), cached_genres.values()):
+    #    d = {'page': title, 'genre': genre}
+    #    o.writerow(d)
 
     # since we don't have y values for our testing set, get an approximation for our testing
     # set by splitting our training set in two and using the first part to classify and the
@@ -163,47 +216,14 @@ if __name__ == "__main__":
 
     feat = Featurizer(analyzer)
 
+    # train
     x_train = feat.train_feature(x_train)
 
     if flags.split:
-        # deal with validation test data
+        # test the validation data
         x_validate = feat.test_feature(x_validate)
 
-    # deal with the test data set
-    if flags.trope and flags.page:
-        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in test))
-    elif flags.trope:
-        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in test))
-    elif flags.page:
-        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in test))
-    else:
-        x_test = array(list((x[kTEXT_FIELD] for x in test)))
-
-    if flags.genre:
-        for x, i in zip(test, range(len(test))):
-            if i % 100 == 0:
-                print("Collecting test genres: %d / %d complete" % (i, len(test)))
-            title = camelCaseConvert(x[kPAGE_FIELD])
-
-            for y in range(1900,2015):
-                    if str(y) in title:
-                        title = title.replace(str(y)," ")
-
-            url = "http://www.omdbapi.com/?t=" + title + "&tomatoes=true"
-            response = urllib.urlopen(url).read()
-            movieInfo = json.loads(response)
-            if 'Genre' in movieInfo:
-                genre = movieInfo['Genre'].split()[0].replace(',', '')
-                cached_genres[str(title)] = genre
-                x_test[i] = ' '.join((x_test[i], genre))
-
-    # write out the cached genre lookup dictionary
-    o = DictWriter(open("../data/spoilers/cached_genres.csv", 'w'), ["page", "genre"])
-    o.writeheader()
-    for title, genre in zip(cached_genres.keys(), cached_genres.values()):
-        d = {'page': title, 'genre': genre}
-        o.writerow(d)
-
+    # test the actual test data
     x_test = feat.test_feature(x_test)
 
     # Train classifier
