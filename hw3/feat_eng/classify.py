@@ -35,8 +35,11 @@ from numpy import array
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import SGDClassifier
 
-kTARGET_FIELD = 'spoiler'
 kTEXT_FIELD = 'sentence'
+kTARGET_FIELD = 'spoiler'
+kVERB_FIELD = 'verb'
+kPAGE_FIELD = 'page'
+kTROPE_FIELD = 'trope'
 
 
 class Analyzer:
