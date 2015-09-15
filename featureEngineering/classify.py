@@ -23,6 +23,7 @@ from sklearn.metrics import accuracy_score
 import argparse
 from nltk.stem import WordNetLemmatizer
 from nltk import word_tokenize
+import re
 
 
 
@@ -41,6 +42,9 @@ kVERB_FIELD = 'verb'
 kPAGE_FIELD = 'page'
 kTROPE_FIELD = 'trope'
 
+def camelCaseConvert(value):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1 \2', value)
+    return re.sub('([a-z0-9])([A-Z])', r'\1 \2', s1).lower()
 
 class Analyzer:
     def __init__(self, word, page, trope):
@@ -170,3 +174,4 @@ if __name__ == "__main__":
     for ii, pp in zip([x['id'] for x in test], predictions):
         d = {'id': ii, 'cat': labels[pp]}
         o.writerow(d)
+
