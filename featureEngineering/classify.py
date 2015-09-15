@@ -82,18 +82,16 @@ class Featurizer:
         self.vectorizer = CountVectorizer(analyzer,
                                           stop_words = "english",
                                           strip_accents = "ascii",
-                                          tokenizer = LemmaTokenizer(),
                                           ngram_range = (1, 2))
 
     def train_feature(self, examples):
-        print(type(examples))
         return self.vectorizer.fit_transform(examples)
 
     def test_feature(self, examples):
         return self.vectorizer.transform(examples)
 
     def show_top10(self, classifier, categories):
-        print("Top 10 features used for each classification")
+        print("\nTop 10 features used for each classification")
         print("--------------------------------------------")
         feature_names = np.asarray(self.vectorizer.get_feature_names())
         if len(categories) == 2:
