@@ -69,6 +69,17 @@ class LemmaTokenizer(object):
     def __call__(self, sentence):
         return [self.wnl.lemmatize(t) for t in word_tokenize(sentence)]
 
+class Featurizer:
+    def __init__(self, analyzer = None):
+        if analyzer is None:
+            print("WARNING: analyzer not given, the number of features will be equal to the "
+                  "vocabulary size found by analyzing the data.")
+
+        self.vectorizer = CountVectorizer(analyzer,
+                                          stop_words = "english",
+                                          strip_accents = "ascii",
+                                          tokenizer = LemmaTokenizer(),
+                                          ngram_range = (1, 2))
 
     def train_feature(self, examples):
         return self.vectorizer.fit_transform(examples)
@@ -109,7 +120,10 @@ if __name__ == "__main__":
 
     test = list(DictReader(open("../data/spoilers/test.csv", 'r')))
 
-    feat = Featurizer()
+    # Get features
+    analyzer = Analyzer(flags.word, flags.page, flags.trope)
+
+    feat = Featurizer(analyzer)
 
     labels = []
     for line in train_a:
