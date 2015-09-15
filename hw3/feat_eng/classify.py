@@ -91,10 +91,15 @@ class Featurizer:
         print("Top 10 features used for each classification")
         print("--------------------------------------------")
         feature_names = np.asarray(self.vectorizer.get_feature_names())
-        for i, category in enumerate(categories):
-            top10 = np.argsort(classifier.coef_[i])[-10:]
-            print("%s: %s" % (category, " ".join(feature_names[top10])))
-        print("")
+        if len(categories) == 2:
+            top10 = np.argsort(classifier.coef_[0])[-10:]
+            bottom10 = np.argsort(classifier.coef_[0])[:10]
+            print("Pos: %s" % " ".join(feature_names[top10]))
+            print("Neg: %s" % " ".join(feature_names[bottom10]))
+        else:
+            for i, category in enumerate(categories):
+                top10 = np.argsort(classifier.coef_[i])[-10:]
+                print("%s: %s" % (category, " ".join(feature_names[top10])))
 
 if __name__ == "__main__":
     # initialize the argument parser and define the arguments
@@ -136,6 +141,9 @@ if __name__ == "__main__":
 
     y_train_a = array(list(labels.index(x[kTARGET_FIELD]) for x in train_a))
     y_train_b = array(list(labels.index(x[kTARGET_FIELD]) for x in train_b))
+
+    print(len(train), len(y_train_a))
+    print(set(y_train_a))
 
     # Train classifier
     lr = SGDClassifier(loss='log', penalty='l2', shuffle=True)
