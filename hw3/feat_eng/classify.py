@@ -21,6 +21,9 @@
 #from nltk.util import ngrams
 from sklearn.metrics import accuracy_score
 import argparse
+from nltk.stem import WordNetLemmatizer
+from nltk import word_tokenize
+
 
 
 
@@ -55,6 +58,13 @@ class Analyzer:
         if self.trope:
             for i in [x for x in feats if x.startswith("T:")]:
                 yield i
+
+
+class LemmaTokenizer(object):
+    def __init__(self):
+        self.wnl = WordNetLemmatizer()
+    def __call__(self, sentence):
+        return [self.wnl.lemmatize(t) for t in word_tokenize(sentence)]
 
 
     def train_feature(self, examples):
