@@ -168,10 +168,11 @@ if __name__ == "__main__":
     train_predictions_b = lr.predict(x_train_b)
     print("Training Accuracy B (testing simulation): %f" % accuracy_score(y_train_b, train_predictions_b))
 
+    # write out the predicitons
     predictions = lr.predict(x_test)
-    o = DictWriter(open("predictions.csv", 'w'), ["id", "cat"])
+    o = DictWriter(open("predictions.csv", 'w'), ["id", "spoiler"])
     o.writeheader()
     for ii, pp in zip([x['id'] for x in test], predictions):
-        d = {'id': ii, 'cat': labels[pp]}
+        d = {'id': ii, 'spoiler': labels[pp]}
         o.writerow(d)
 
