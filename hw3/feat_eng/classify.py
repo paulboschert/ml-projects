@@ -82,6 +82,7 @@ class Featurizer:
                                           ngram_range = (1, 2))
 
     def train_feature(self, examples):
+        print(type(examples))
         return self.vectorizer.fit_transform(examples)
 
     def test_feature(self, examples):
@@ -110,17 +111,18 @@ if __name__ == "__main__":
                         help="Use the page as a feature, this appears to be the author of the quote")
     parser.add_argument('--trope', default=False, action="store_true",
                         help="Use the trope as a feature, this appears to be the movie/show that the quote is about")
+    parser.add_argument('--split', default=False, action="store_true",
+                        help="Use the trope as a feature, this appears to be the movie/show that the quote is about")
 
     flags = parser.parse_args()
 
     """
     Read in data
     """
-    train = list(DictReader(open("../data/spoilers/train.csv", 'r')))
     # since we don't have y values for our testing set, get an approximation for our testing
     # set by splitting our training set in two and using the first half to classify and the
     # second half to test the accuracy
-
+    train = list(DictReader(open("../data/spoilers/train.csv", 'r')))
     train_a = train[:len(train) / 2] # 1st half
     train_b = train[len(train) / 2:] # 2nd half
 
