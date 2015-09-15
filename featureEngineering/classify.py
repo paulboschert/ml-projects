@@ -19,9 +19,8 @@ from nltk.stem import WordNetLemmatizer
 from nltk import word_tokenize
 from sklearn.cross_validation import train_test_split
 import re
-
-
-
+import json
+import urllib
 
 from csv import DictReader, DictWriter
 
@@ -123,6 +122,27 @@ if __name__ == "__main__":
 
     y_train_all = array(list(labels.index(x[kTARGET_FIELD]) for x in train))
 
+    cached_genres = {}
+    if flags.genre:
+        for x, i in zip(train, range(len(train))):
+            if i % 100 == 0:
+                print("Collecting training genres: %d / %d complete" % (i, len(train)))
+
+            title = camelCaseConvert(x[kPAGE_FIELD])
+
+            for y in range(1900,2015):
+                    if str(y) in title:
+                        title = title.replace(str(y)," ")
+
+            url = "http://www.omdbapi.com/?t=" + title + "&tomatoes=true"
+            response = urllib.urlopen(url).read()
+            movieInfo = json.loads(response)
+            if 'Genre' in movieInfo:
+                genre = movieInfo['Genre'].split()[0].replace(',', '')
+                cached_genres[str(title)] = genre
+                x_train_all[i] = ' '.join((x_train_all[i], genre))
+
+
     # since we don't have y values for our testing set, get an approximation for our testing
     # set by splitting our training set in two and using the first part to classify and the
     # second part to validate the accuracy
@@ -158,6 +178,31 @@ if __name__ == "__main__":
         x_test = array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in test))
     else:
         x_test = array(list((x[kTEXT_FIELD] for x in test)))
+
+    if flags.genre:
+        for x, i in zip(test, range(len(test))):
+            if i % 100 == 0:
+                print("Collecting test genres: %d / %d complete" % (i, len(test)))
+            title = camelCaseConvert(x[kPAGE_FIELD])
+
+            for y in range(1900,2015):
+                    if str(y) in title:
+                        title = title.replace(str(y)," ")
+
+            url = "http://www.omdbapi.com/?t=" + title + "&tomatoes=true"
+            response = urllib.urlopen(url).read()
+            movieInfo = json.loads(response)
+            if 'Genre' in movieInfo:
+                genre = movieInfo['Genre'].split()[0].replace(',', '')
+                cached_genres[str(title)] = genre
+                x_test[i] = ' '.join((x_test[i], genre))
+
+    # write out the cached genre lookup dictionary
+    o = DictWriter(open("../data/spoilers/cached_genres.csv", 'w'), ["page", "genre"])
+    o.writeheader()
+    for title, genre in zip(cached_genres.keys(), cached_genres.values()):
+        d = {'page': title, 'genre': genre}
+        o.writerow(d)
 
     x_test = feat.test_feature(x_test)
 
