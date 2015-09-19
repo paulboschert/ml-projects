@@ -1,6 +1,13 @@
 Features:
+  - Look at where there are two spaces in the sentance!!!!!!!!!!!
+  - Look at where there are three spaces in the sentance!!!!!!!!!!!
+    - or multiple spaces followed by a lower case letter
+  - look at decade as a feature
+  - look at number of years that the show was running
+  - look at the popularity of the movie
   - Strip stop words
     \.html
+  - Try using the number of times a page has been edited
 
   - Try using the 'page'
   - Try using the 'trope'

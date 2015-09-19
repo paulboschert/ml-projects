@@ -72,7 +72,8 @@ def addGenres(dataset, field, X, cached_genres):
             cached_genres[title] = queryGenre(title)
 
         if title in cached_genres:
-            X[i] = ' '.join((X[i], cached_genres[title]))
+            genre = ''.join(("Genre", cached_genres[title]))
+            X[i] = ' '.join((X[i], genre))
 
     return (X, cached_genres)
 
@@ -94,7 +95,7 @@ class Featurizer:
 
         self.vectorizer = CountVectorizer(analyzer,
                                           stop_words = "english",
-                                          strip_accents = "ascii",
+                                          #strip_accents = "ascii",
                                           ngram_range = (1, 2))
 
     def train_feature(self, examples):
@@ -129,7 +130,11 @@ if __name__ == "__main__":
     parser.add_argument('--split', default = False, action = "store_true",
                         help = "Use the trope as a feature, this appears to be the movie/show that the quote is about")
     parser.add_argument('--genre', default = False, action = "store_true",
-                        help = "Add the genre of the based on the trope")
+                        help = "Add the genre based on the page")
+    parser.add_argument('--year', default = False, action = "store_true",
+                        help = "Add the year based on the page")
+    parser.add_argument('--decade', default = False, action = "store_true",
+                        help = "Use the decade instead of the year based on the page")
 
     flags = parser.parse_args()
 
@@ -141,11 +146,14 @@ if __name__ == "__main__":
 
     # read in the cached genre file if the flag is specified
     if flags.genre:
-        reader = csv.reader(open("../data/spoilers/cached_genres.csv", 'r'))
         cached_genres = {}
-        for row in reader:
-            key, value = row
-            cached_genres[key] = value;
+        try:
+            reader = csv.reader(open("../data/spoilers/cached_genres.csv", 'r'))
+            for row in reader:
+                key, value = row
+                cached_genres[key] = value;
+        except:
+            print("WARNING: No cached genre file found... go get some coffee")
 
     labels = []
     for line in train:
@@ -156,44 +164,37 @@ if __name__ == "__main__":
 
     if flags.trope and flags.page:
         x_train_all = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in train))
+        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in test))
     elif flags.trope:
         x_train_all = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in train))
+        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in test))
     elif flags.page:
         x_train_all = array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in train))
+        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in test))
     else:
         x_train_all = array(list((x[kTEXT_FIELD] for x in train)))
+        x_test = array(list((x[kTEXT_FIELD] for x in test)))
 
     y_train_all = array(list(labels.index(x[kTARGET_FIELD]) for x in train))
 
     if flags.genre:
         (x_train_all, cached_genres) = addGenres(train, kPAGE_FIELD, x_train_all, cached_genres)
-
-    # deal with the test data set
-    if flags.trope and flags.page:
-        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in test))
-    elif flags.trope:
-        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in test))
-    elif flags.page:
-        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in test))
-    else:
-        x_test = array(list((x[kTEXT_FIELD] for x in test)))
-
-    if flags.genre:
         (x_test, cached_genres) = addGenres(test, kPAGE_FIELD, x_test, cached_genres)
 
-    # write out the cached genre lookup dictionary
-    #o = DictWriter(open("../data/spoilers/cached_genres.csv", 'w'), ["page", "genre"])
-    #o.writeheader()
-    #for title, genre in zip(cached_genres.keys(), cached_genres.values()):
-    #    d = {'page': title, 'genre': genre}
-    #    o.writerow(d)
+    if flags.genre:
+        # write out the cached genre lookup dictionary
+        o = DictWriter(open("../data/spoilers/cached_genres.csv", 'w'), ["page", "genre"])
+        o.writeheader()
+        for title, genre in zip(cached_genres.keys(), cached_genres.values()):
+            d = {'page': title, 'genre': genre}
+            o.writerow(d)
 
     # since we don't have y values for our testing set, get an approximation for our testing
     # set by splitting our training set in two and using the first part to classify and the
     # second part to validate the accuracy
     if flags.split:
         x_train, x_validate, y_train, y_validate = train_test_split(x_train_all, y_train_all, test_size = .25,
-                                                                    random_state = 42)
+                                                                    random_state = 0)
     else:
         x_train = x_train_all
         y_train = y_train_all
