@@ -19,6 +19,8 @@ from sklearn.cross_validation import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import chi2
 import re
 import json
 import urllib
@@ -181,7 +183,7 @@ class Featurizer:
         self.vectorizer = CountVectorizer(analyzer,
                                           stop_words = "english",
                                           #strip_accents = "ascii",
-                                          ngram_range = (1, 2))
+                                          ngram_range = (1, 4))
 
     def train_feature(self, examples):
         return self.vectorizer.fit_transform(examples)
@@ -227,6 +229,10 @@ if __name__ == "__main__":
                         help = "Add the year based on the page")
     parser.add_argument('--decade', default = False, action = "store_true",
                         help = "Use the decade instead of the year based on the page.  This superceeds the year flag")
+    parser.add_argument('--featsel', default = False, action = "store_true",
+                        help = "Enable feature selection")
+    parser.add_argument('--featsel_ratio', default = 0.9, type = float,
+                        help = "Specify the feature selection ratio")
 
     flags = parser.parse_args()
 
@@ -332,6 +338,16 @@ if __name__ == "__main__":
 
     # test the actual test data
     x_test = feat.test_feature(x_test)
+
+    k = int(x_train.shape[1] * flags.featsel_ratio)
+    if flags.featsel:
+        featureSelection = SelectKBest(chi2, k = k)
+        featureSelection.fit(x_train, y_train)
+        x_train = featureSelection.transform(x_train)   
+        if flags.split:
+            x_validate = featureSelection.transform(x_validate)
+        x_test = featureSelection.transform(x_test)
+
 
     # Train classifier
     lr = SGDClassifier(loss='log', penalty='l2', shuffle=True)
