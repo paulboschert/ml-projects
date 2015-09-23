@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 #
-#
 # Starting code from:
 # http://www.cs.colorado.edu/~jbg/teaching/CSCI_5622/04.py
 # https://github.com/ezubaric/ml-hw/blob/master/feat_eng/classify.py
 # 
-# 
 # Modified By:
 # Paul Boschert <paul@boschert.net>, <paul.boschert@colorado.edu>
-# CSCI 5622 - Machine Learning: Homework 3
-#                                                                                                                         
+# CSCI 5622 - Machine Learning: Feature Engineering (HW 3)
+#
 
 
 #from nltk.util import ngrams
@@ -31,21 +29,34 @@ from numpy import array
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import SGDClassifier
 
-kTEXT_FIELD = 'sentence'
+kTEXT_FIELD   = 'sentence'
 kTARGET_FIELD = 'spoiler'
-kVERB_FIELD = 'verb'
-kPAGE_FIELD = 'page'
-kTROPE_FIELD = 'trope'
+kVERB_FIELD   = 'verb'
+kPAGE_FIELD   = 'page'
+kTROPE_FIELD  = 'trope'
 
 def camelCaseConvert(value):
+    '''
+    Convert a string that is CamelCase to multiple words, also change to lower case
+    For example CamelCase becomes camel case
+
+    :param value The string to convert
+    :return A lower case string with spaces separating the humps of the camel case word
+    '''
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1 \2', value)
     return re.sub('([a-z0-9])([A-Z])', r'\1 \2', s1).lower()
 
 def queryGenre(title):
+    '''
+    Query the genre from the open movie database
+
+    :param title The title of the item to search.  Titles containing numbers like the year of production will be removed
+    :return The genre matching the title if found, an empty string if not found
+    '''
     genre = ""
-    for year in range(1888, 2015):
-        if str(year) in title:
-            title = title.replace(str(year), " ")
+    for yearInTitle in range(1888, 2015):
+        if str(yearInTitle) in title:
+            title = title.replace(str(yearInTitle), " ")
 
     # query the open movie database
     queryURL = "http://www.omdbapi.com/?t=" + title + "&tomatoes=true"
@@ -57,25 +68,68 @@ def queryGenre(title):
         genre = movieInfo['Genre'].split()[0].replace(',', '')
 
     # return the genre found
-    return genre
+	return genre
+
+def queryYear(title):
+    '''
+    Query the year from the open movie database
+
+    :param title The title of the item to search.  Titles containing numbers like the year of production will be removed
+    :return The year(s) matching the title if found, an empty string if not found
+    '''
+    year = ""
+    for yearInTitle in range(1888, 2015):
+        if str(yearInTitle) in title:
+            title = title.replace(str(yearInTitle), " ")
+
+    # query the open movie database
+    queryURL = "http://www.omdbapi.com/?t=" + title + "&tomatoes=true"
+    response = urllib.urlopen(queryURL).read()
+    movieInfo = json.loads(response)
+
+    # if year(s) are defined for this title
+    if 'Year' in movieInfo:
+        year = movieInfo['Year']
+
+    # remove unknown unicode dashes
+    year = year.encode('ascii', 'replace')
+    year = year.replace('?', '-')
+
+    # return the year(s) found
+    return year
 
 def addGenres(dataset, field, X, cached_genres):
     for x, i in zip(dataset, range(len(dataset))):
-        #if i % 100 == 0:
-        #    print("Collecting genres: %d / %d complete" % (i, len(dataset)))
-
         title = camelCaseConvert(x[field])
 
         # query the genre if it doesn't exist in the cached dictionary
         if title not in cached_genres:
-            #print("'%s' not found, querying..." % title)
+            print("'%s' not found in cached_genres, querying..." % title)
             cached_genres[title] = queryGenre(title)
+            print("   '%s' query resulted in genre: %s" % (title, cached_genres[title]))
 
         if title in cached_genres:
             genre = ''.join(("Genre", cached_genres[title]))
             X[i] = ' '.join((X[i], genre))
 
     return (X, cached_genres)
+
+
+def addYears(dataset, field, X, cached_years):
+    for x, i in zip(dataset, range(len(dataset))):
+        title = camelCaseConvert(x[field])
+
+        # query the year(s) if they don't exist in the cached dictionary
+        if title not in cached_years:
+            print("'%s' not found in cached_years, querying..." % title)
+            cached_years[title] = queryYears(title)
+            print("   '%s' query resulted in year: %s" % (title, cached_years[title]))
+
+        if title in cached_years:
+            year = ''.join(("Year", cached_years[title]))
+            X[i] = ' '.join((X[i], year))
+
+    return (X, cached_years)
 
 class Analyzer:
     def __init__(self, word):
@@ -155,6 +209,17 @@ if __name__ == "__main__":
         except:
             print("WARNING: No cached genre file found... go get some coffee")
 
+    # read in the cached year file if the flag is specified
+    if flags.year:
+        cached_years = {}
+        try:
+            reader = csv.reader(open("../data/spoilers/cached_years.csv", 'r'))
+            for row in reader:
+                key, value = row
+                cached_years[key] = value;
+        except:
+            print("WARNING: No cached years file found... go get some coffee")
+
     labels = []
     for line in train:
         if not line[kTARGET_FIELD] in labels:
@@ -181,12 +246,22 @@ if __name__ == "__main__":
         (x_train_all, cached_genres) = addGenres(train, kPAGE_FIELD, x_train_all, cached_genres)
         (x_test, cached_genres) = addGenres(test, kPAGE_FIELD, x_test, cached_genres)
 
-    if flags.genre:
         # write out the cached genre lookup dictionary
         o = DictWriter(open("../data/spoilers/cached_genres.csv", 'w'), ["page", "genre"])
         o.writeheader()
         for title, genre in zip(cached_genres.keys(), cached_genres.values()):
             d = {'page': title, 'genre': genre}
+            o.writerow(d)
+
+    if flags.year:
+        (x_train_all, cached_years) = addYears(train, kPAGE_FIELD, x_train_all, cached_years)
+        (x_test, cached_years) = addYears(test, kPAGE_FIELD, x_test, cached_years)
+
+        # write out the cached year lookup dictionary
+        o = DictWriter(open("../data/spoilers/cached_years.csv", 'w'), ["page", "year"])
+        o.writeheader()
+        for title, year in zip(cached_years.keys(), cached_years.values()):
+            d = {'page': title, 'year': year}
             o.writerow(d)
 
     # since we don't have y values for our testing set, get an approximation for our testing
