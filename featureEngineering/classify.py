@@ -198,28 +198,6 @@ if __name__ == "__main__":
     train = list(DictReader(open("../data/spoilers/train.csv", 'r')))
     test = list(DictReader(open("../data/spoilers/test.csv", 'r')))
 
-    # read in the cached genre file if the flag is specified
-    if flags.genre:
-        cached_genres = {}
-        try:
-            reader = csv.reader(open("../data/spoilers/cached_genres.csv", 'r'))
-            for row in reader:
-                key, value = row
-                cached_genres[key] = value;
-        except:
-            print("WARNING: No cached genre file found... go get some coffee")
-
-    # read in the cached year file if the flag is specified
-    if flags.year:
-        cached_years = {}
-        try:
-            reader = csv.reader(open("../data/spoilers/cached_years.csv", 'r'))
-            for row in reader:
-                key, value = row
-                cached_years[key] = value;
-        except:
-            print("WARNING: No cached years file found... go get some coffee")
-
     labels = []
     for line in train:
         if not line[kTARGET_FIELD] in labels:
@@ -243,6 +221,16 @@ if __name__ == "__main__":
     y_train_all = array(list(labels.index(x[kTARGET_FIELD]) for x in train))
 
     if flags.genre:
+        # read in the cached genres file
+        cached_genres = {}
+        try:
+            reader = csv.reader(open("../data/spoilers/cached_genres.csv", 'r'))
+            for row in reader:
+                key, value = row
+                cached_genres[key] = value;
+        except:
+            print("WARNING: No cached genre file found... go get some coffee")
+
         (x_train_all, cached_genres) = addGenres(train, kPAGE_FIELD, x_train_all, cached_genres)
         (x_test, cached_genres) = addGenres(test, kPAGE_FIELD, x_test, cached_genres)
 
@@ -254,6 +242,16 @@ if __name__ == "__main__":
             o.writerow(d)
 
     if flags.year:
+        # read in the cached years file
+        cached_years = {}
+        try:
+            reader = csv.reader(open("../data/spoilers/cached_years.csv", 'r'))
+            for row in reader:
+                key, value = row
+                cached_years[key] = value;
+        except:
+            print("WARNING: No cached years file found... go get some coffee")
+
         (x_train_all, cached_years) = addYears(train, kPAGE_FIELD, x_train_all, cached_years)
         (x_test, cached_years) = addYears(test, kPAGE_FIELD, x_test, cached_years)
 
