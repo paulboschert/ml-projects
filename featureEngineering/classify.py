@@ -3,7 +3,7 @@
 # Starting code from:
 # http://www.cs.colorado.edu/~jbg/teaching/CSCI_5622/04.py
 # https://github.com/ezubaric/ml-hw/blob/master/feat_eng/classify.py
-# 
+#
 # Modified By:
 # Paul Boschert <paul@boschert.net>, <paul.boschert@colorado.edu>
 # CSCI 5622 - Machine Learning: Feature Engineering (HW 3)
@@ -11,29 +11,20 @@
 
 
 #from nltk.util import ngrams
-from sklearn.metrics import accuracy_score
 import argparse
+import numpy as np
 from nltk.stem import WordNetLemmatizer
 from nltk import word_tokenize
 from sklearn.cross_validation import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import accuracy_score
 import re
 import json
 import urllib
-
-from csv import DictReader, DictWriter
 import csv
+import datetime
 
-import numpy as np
-from numpy import array
-
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.linear_model import SGDClassifier
-
-kTEXT_FIELD   = 'sentence'
-kTARGET_FIELD = 'spoiler'
-kVERB_FIELD   = 'verb'
-kPAGE_FIELD   = 'page'
-kTROPE_FIELD  = 'trope'
 
 def camelCaseConvert(value):
     '''
@@ -131,6 +122,38 @@ def addYears(dataset, field, X, cached_years):
 
     return (X, cached_years)
 
+def addDecades(dataset, field, X, cached_years):
+    for x, i in zip(dataset, range(len(dataset))):
+        title = camelCaseConvert(x[field])
+
+        # query the year(s) if they don't exist in the cached dictionary
+        if title not in cached_years:
+            print("'%s' not found in cached_years, querying..." % title)
+            cached_years[title] = queryYears(title)
+            print("   '%s' query resulted in year: %s" % (title, cached_years[title]))
+
+        if title in cached_years:
+            year = cached_years[title]
+
+            # if the year isn't blank, add it
+            if year != '':
+                # if the last character is a dash suggesting the title is still airing, add the
+                # current year to the end so we can get an average and deterime the decade
+                if year[len(year) - 1] == '-':
+                    year = year + str(datetime.date.today().year)
+
+                # Assuming the data is in the form (year-year, e.g. 1999-2015);
+                # average the two years and round to the nearest decade
+                decade = str(np.round(np.mean(map(int, year.split('-'))), decimals = -1))
+
+                # add the text 'Decade' to the beginning of the decade
+                decade = ''.join(("Decade", decade))
+
+                # update the list passed in
+                X[i] = ' '.join((X[i], decade))
+
+    return (X, cached_years)
+
 class Analyzer:
     def __init__(self, word):
         self.word = word
@@ -173,6 +196,13 @@ class Featurizer:
                 print("%s: %s" % (category, " ".join(feature_names[top10])))
 
 if __name__ == "__main__":
+    # header of the spoiler file
+    kTEXT_FIELD   = 'sentence'
+    kTARGET_FIELD = 'spoiler'
+    kVERB_FIELD   = 'verb'
+    kPAGE_FIELD   = 'page'
+    kTROPE_FIELD  = 'trope'
+
     # initialize the argument parser and define the arguments
     parser = argparse.ArgumentParser(description="")
     parser.add_argument('--word', default = False, action = "store_true",
@@ -188,15 +218,15 @@ if __name__ == "__main__":
     parser.add_argument('--year', default = False, action = "store_true",
                         help = "Add the year based on the page")
     parser.add_argument('--decade', default = False, action = "store_true",
-                        help = "Use the decade instead of the year based on the page")
+                        help = "Use the decade instead of the year based on the page.  This superceeds the year flag")
 
     flags = parser.parse_args()
 
     """
     Read in data
     """
-    train = list(DictReader(open("../data/spoilers/train.csv", 'r')))
-    test = list(DictReader(open("../data/spoilers/test.csv", 'r')))
+    train = list(csv.DictReader(open("../data/spoilers/train.csv", 'r')))
+    test = list(csv.DictReader(open("../data/spoilers/test.csv", 'r')))
 
     labels = []
     for line in train:
@@ -206,19 +236,19 @@ if __name__ == "__main__":
     #print("Label set: %s" % str(labels))
 
     if flags.trope and flags.page:
-        x_train_all = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in train))
-        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in test))
+        x_train_all = np.array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in train))
+        x_test = np.array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD], x[kPAGE_FIELD])) for x in test))
     elif flags.trope:
-        x_train_all = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in train))
-        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in test))
+        x_train_all = np.array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in train))
+        x_test = np.array(list(' '.join((x[kTEXT_FIELD], x[kTROPE_FIELD])) for x in test))
     elif flags.page:
-        x_train_all = array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in train))
-        x_test = array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in test))
+        x_train_all = np.array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in train))
+        x_test = np.array(list(' '.join((x[kTEXT_FIELD], x[kPAGE_FIELD])) for x in test))
     else:
-        x_train_all = array(list((x[kTEXT_FIELD] for x in train)))
-        x_test = array(list((x[kTEXT_FIELD] for x in test)))
+        x_train_all = np.array(list((x[kTEXT_FIELD] for x in train)))
+        x_test = np.array(list((x[kTEXT_FIELD] for x in test)))
 
-    y_train_all = array(list(labels.index(x[kTARGET_FIELD]) for x in train))
+    y_train_all = np.array(list(labels.index(x[kTARGET_FIELD]) for x in train))
 
     if flags.genre:
         # read in the cached genres file
@@ -235,13 +265,13 @@ if __name__ == "__main__":
         (x_test, cached_genres) = addGenres(test, kPAGE_FIELD, x_test, cached_genres)
 
         # write out the cached genre lookup dictionary
-        o = DictWriter(open("../data/spoilers/cached_genres.csv", 'w'), ["page", "genre"])
+        o = csv.DictWriter(open("../data/spoilers/cached_genres.csv", 'w'), ["page", "genre"])
         o.writeheader()
         for title, genre in zip(cached_genres.keys(), cached_genres.values()):
             d = {'page': title, 'genre': genre}
             o.writerow(d)
 
-    if flags.year:
+    if flags.year or flags.decade:
         # read in the cached years file
         cached_years = {}
         try:
@@ -252,11 +282,15 @@ if __name__ == "__main__":
         except:
             print("WARNING: No cached years file found... go get some coffee")
 
-        (x_train_all, cached_years) = addYears(train, kPAGE_FIELD, x_train_all, cached_years)
-        (x_test, cached_years) = addYears(test, kPAGE_FIELD, x_test, cached_years)
+        if flags.decade: # decade superceeds years, add decades instead
+            (x_train_all, cached_years) = addDecades(train, kPAGE_FIELD, x_train_all, cached_years)
+            (x_test, cached_years) = addDecades(test, kPAGE_FIELD, x_test, cached_years)
+        else: # else decade was not selected, add years instead
+            (x_train_all, cached_years) = addYears(train, kPAGE_FIELD, x_train_all, cached_years)
+            (x_test, cached_years) = addYears(test, kPAGE_FIELD, x_test, cached_years)
 
         # write out the cached year lookup dictionary
-        o = DictWriter(open("../data/spoilers/cached_years.csv", 'w'), ["page", "year"])
+        o = csv.DictWriter(open("../data/spoilers/cached_years.csv", 'w'), ["page", "year"])
         o.writeheader()
         for title, year in zip(cached_years.keys(), cached_years.values()):
             d = {'page': title, 'year': year}
@@ -306,7 +340,7 @@ if __name__ == "__main__":
 
     # write out the predicitons
     predictions = lr.predict(x_test)
-    o = DictWriter(open("predictions.csv", 'w'), ["id", "spoiler"])
+    o = csv.DictWriter(open("predictions.csv", 'w'), ["id", "spoiler"])
     o.writeheader()
     for ii, pp in zip([x['id'] for x in test], predictions):
         d = {'id': ii, 'spoiler': labels[pp]}
