@@ -100,8 +100,12 @@ def addGenres(dataset, field, X, cached_genres):
             print("   '%s' query resulted in genre: %s" % (title, cached_genres[title]))
 
         if title in cached_genres:
-            genre = ''.join(("Genre", cached_genres[title]))
-            X[i] = ' '.join((X[i], genre))
+            genre = cached_genres[title]
+
+            # if the genre isn't blank, add it
+            if genre != '':
+                genre = ''.join(("Genre", genre))
+                X[i] = ' '.join((X[i], genre))
 
     return (X, cached_genres)
 
@@ -117,8 +121,12 @@ def addYears(dataset, field, X, cached_years):
             print("   '%s' query resulted in year: %s" % (title, cached_years[title]))
 
         if title in cached_years:
-            year = ''.join(("Year", cached_years[title]))
-            X[i] = ' '.join((X[i], year))
+            year = cached_years[title]
+
+            # if the genre isn't blank, add it
+            if year != '':
+                year = ''.join(("Year", year))
+                X[i] = ' '.join((X[i], year))
 
     return (X, cached_years)
 
