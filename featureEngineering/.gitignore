@@ -1,2 +1,5 @@
 *.pyc
 .*.swp
+*.aux
+*.tex.backup
+*.log
