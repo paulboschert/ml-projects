@@ -1,0 +1,95 @@
+\documentclass[8pt]{extarticle}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage[bottom=1in, top=1in, left=1in, right=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{here}
+\usepackage{subfigure}
+\usepackage[T1]{fontenc}
+\DeclareGraphicsExtensions{.pdf,.png,.jpg}
+
+\pagestyle{fancy}
+\setlength{\headheight}{.5in}
+\setlength{\parindent}{0in}
+\usepackage{enumitem}
+\setlist[enumerate]{itemsep=0mm}
+
+\begin{document}
+
+\rhead{
+          Paul Boschert\\
+          09/18/2015\\
+          CSCI 5622 - Machine Learning: Feature Engineering (HW 3) Analysis \\
+      }
+
+%\newcommand{\localtextbulletone}{\raisebox{.45ex}{\rule{.8ex}{.8ex}}}
+%\renewcommand{\labelitemi}{\localtextbulletone}
+\begin{enumerate}
+  \item In order to test the accuracy of my training data set, I first used sklearn.metrics.accuracy\_score.  This gave me the accuracy of my model based on the y values in the training set.  By itself, this is not very useful.
+  \begin{enumerate}
+    \item My training data set was clearly overfitting at $\sim$99\%.
+    \item For a baseline, I submitted my score to Kaggle and recieved a poor score $\sim$63\%.
+  \end{enumerate}
+  \item So the next thing I did was add the ability to split up my data set for testing purposes so that I could train on part of it and use the other part for cross validation.
+  \begin{enumerate}
+    \item This is enabled with the \texttt{-{}-}split flag.
+    \item I tried several different ways to split it up and settled on a 75\% train, 25\% test split.
+    \item My training score decreased slightly, and now I had a cross validation score of $\sim$63\%
+    \item I resubmitted to Kaggle (because the submission timer was about to expire), and my score didn't change much.
+  \end{enumerate}  
+  \item Next, I tried adding the page listed in the spoiler file to the list of features.
+  \begin{enumerate}
+    \item This is enabled with the \texttt{-{}-}page flag.
+    \item My training score remained about the same, and now I had a cross validation score of $\sim$67\%
+    \item I also noticed that several of the pages were showing up in the top list of features:\\
+      Pos: spartacusbloodandsand prisonbreak sherlock thewalkingdead gokai criminalminds fringe twentyfour torchwoodmiracleday americanhorrorstory\\
+      Neg: wings boymeetsworld mythbusters video skills cornergas tv onethousandwaystodie frequently theitcrowd
+    \item I did not submit this alone to Kaggle.
+  \end{enumerate}
+  \item Next, I tried adding the trope listed in the spoiler file to the list of features.
+  \begin{enumerate}
+    \item This is enabled with the \texttt{-{}-}trope flag.
+    \item My training score remained about the same, and now I had a cross validation score of $\sim$72\%
+    \item When I submitted this to Kaggle, my score still didn't change much even though my cross validation set was significantly higher.  After looking at the discussion board, I realized that the tropes and page in the training set were not in the test data set.
+  \end{enumerate}
+  \item At this point I wanted to group the pages and/or the tropes together into some abstract feature.
+  \item I read a bit of documentation online and found a few papers discussing the basis of this assignment \cite{spoilerAlertPaper1} \cite{spoilerAlertPaper2}
+  \item At this point I tried adding the first genre listed for a page by quering the Open Movie Database.  Then I appended the word `genre' to the genre (e.g. `genredrama')
+  \begin{enumerate}
+    \item This is enabled with the \texttt{-{}-}genre flag.
+  \end{enumerate}
+  \item I also tried adding the average decade in which the show ran by querying the Open Movie Database, and converting the years it was running to an average, then appending `year' to the number (e.g. `year2012')
+  \begin{enumerate}
+    \item This is enabled with the \texttt{-{}-}year flag.
+  \end{enumerate}
+  \item These two additional features did not result in a substantial improvement.  I also removed trope and page since they were not in common with the testing data set.  However, my Kaggle score was much closer to my validation set.
+  \item In addition, several genres were in the top features.
+  \item Instead of adding the year, I averaged the years listed, and rounded to the nearest decade.
+  \begin{enumerate}
+    \item This is enabled with the \texttt{-{}-}decade flag.  And it overrides the \texttt{-{}-}year flag.
+  \end{enumerate}
+  \item I also tried using a lemmatizer and a stemmer to simplify the words in the sentance.  Either of these and in combination worsened my score on the validation data set and my Kaggle score so I removed them.
+  \item I tried changing ngrams as an option into the CountVectorizer as well, I settled on ngrams 1 through 2.  3 or even 4 made my validation data set worse consistently.
+  \item At this point I had a validation data set score and a Kaggle score that was doing pretty well, low $\sim$70\%s
+  \item I found that I could increase my validation data set score up to 77\%, but this did not translate to a Kaggle score of 77\%.  I surmised that this had something to do with how my features were too tied to the training data set.
+  \item The last thing I tried was reducing the number of features selected with sklearn.feature\_selection.SelectKBest.  I used the chi2 score\_func in SelectKBest which selects the ${\chi}^2$ stats of non-negative features for classification tasks.
+  \begin{enumerate}
+    \item This is enabled with the \texttt{-{}-}featsel flag.
+  \end{enumerate}
+  \item I also added the ability to change the feature selection ratio with the \texttt{-{}-}featsel\_ratio flag.  I found the best value to be .9.
+  \item This finally gave me my best Kaggle score of 76.829\%
+  \item Unfortunately, the results on Kaggle were only one half of the data set and my score droped to 74.560\% on the other half of the data set\ldots I suppose that's always possible when the algorithm is stochastic.
+\end{enumerate}
+
+\newpage
+\begin{thebibliography}{1}
+  \bibitem{spoilerAlertPaper1} Jordan Boyd-Graber, Kimberly Glasgow, Jackie Sauter Zajac {\em Spoiler Alert: Machine Learning Approaches to Detect
+Social Media Posts with Revelatory Information, https://github.com/ezubaric/jbg-web/blob/master/docs/2013\_spoiler.pdf}, 2013. PDF file.
+
+  \bibitem{spoilerAlertPaper2} Shawn M. Jones, Michael L. Nelson {\em Avoiding Spoilers in Fan Wikis of Episodic Fiction, http://arxiv.org/pdf/1506.06279}, 2015. PDF file.
+
+\end{thebibliography}
+
+\end{document}
+
