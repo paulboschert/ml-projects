@@ -1,0 +1,7 @@
+*.pyc
+.*.swp
+*.aux
+*.tex.backup
+*.log
+*.bbl
+*.blg
