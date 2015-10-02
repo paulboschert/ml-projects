@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from random import randint, seed
 from collections import defaultdict
 from math import atan, sin, cos, pi
@@ -223,7 +221,13 @@ def rademacher_estimate(dataset, hypothesis_generator, num_samples=500,
       correlation
     """
 
-    # TODO: complete this function
+    for ii in xrange(num_samples):
+        if random_seed != 0:
+            rademacher = coin_tosses(len(dataset), random_seed + ii)
+        else:
+            rademacher = coin_tosses(len(dataset))
+
+        # TODO: complete this function
     return 0.0
 
 if __name__ == "__main__":
