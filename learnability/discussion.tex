@@ -1,4 +1,4 @@
-\documentclass[8pt]{extarticle}
+\documentclass[10pt]{extarticle}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{fancyhdr}
@@ -23,11 +23,29 @@
           CSCI 5622 - Machine Learning: Learnability (HW 4) Discussion \\
       }
 
-%\newcommand{\localtextbulletone}{\raisebox{.45ex}{\rule{.8ex}{.8ex}}}
-%\renewcommand{\labelitemi}{\localtextbulletone}
-\begin{enumerate}
-  \item Test
-\end{enumerate}
+\textbf{\textit{1)}} argue about an ordering of hypothesis classes in terms of complexity: hyperplanes through the origin, arbitrary hyperplanes, and axis-aligned rectangles (you can use your experiments as a guide, but simply reporting those numbers is not sufficient; you must make a mathematical argument)
+\\
+\textit{Solution:} 
+\\
+\textbf{\textit{2)}} prove that your frequency correctly classifies any training set (up to floating point precision on the computer).
+\\
+\textit{Solution:} From the additional reading, svmtutorial.pdf: If we choose some number $l$, and find $l$ points that can be shattered, we choose the points to be:
+$$x_i = 10^{-i}, i = 1, ..., l$$
+Then we specify any labels:
+$$y_1, y_2, ..., y_l, y_i \in \{-1, 1\}$$
+Then $f(\alpha)$ gives this labeling if we choose $\alpha$ to be:
+$$\alpha = \pi(1 + \sum_{i=1}^{l}(\frac{1 - y_i)10^i}{2})$$
+\\
+Thus the VC dimension of this is infinite.
+\\
+\textbf{\textit{3)}} Suppose we are classifying real numbers, not integers. The classifier returns positive (1) if the point is greater than the sin function and negative (0) otherwise.
+$$h_\omega(x : x \in \mathbb{R} ) \equiv \begin{cases} 1& \mbox{if } \sin(\omega x) \geq 0 \\ 0 & \mbox{otherwise} \end{cases}$$
+Give an example of four points that cannot be shattered by this classifier. How does this relate to the VC dimension?
+\\
+\textit{Solution:} Four equa-distant points cannot be shattered by this classifier.  For example $x_i = 1, 2, 3, 4$, $y_i = 0, 0, 1, 0$.
+
+
+Despite having a VC dimension that is infinite, there still exist some points that cannot be shattered by $\sin(\omega x)$.  This doesn't say anything about the upper bound because the upper bound says that \textit{any} set of points can't be shattered by the classifier.
 
 \end{document}
 
