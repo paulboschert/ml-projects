@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from random import randint, seed
 from collections import defaultdict
 from math import atan, sin, cos, pi
@@ -27,9 +29,22 @@ class Classifier:
 
         assert all(x == 1 or x == -1 for x in labels), "Labels must be binary"
 
-        # TODO: implement this function
-        return 0.0
+        summation = 0.0
 
+        for d, y_i in zip(data, labels):
+            # classify the data to get our hypothesis
+            h = self.classify(d)
+
+            # convert classify's return to {-1, 1}
+            if h:
+                h = 1
+            else:
+                h = -1
+
+            # add it to our running sum
+            summation += y_i * h
+
+        return summation / len(data)
 
 class PlaneHypothesis(Classifier):
     """
@@ -171,7 +186,7 @@ def plane_hypotheses(dataset):
 
     """
 
-    # Complete this for extra credit
+    # TODO: Complete this for extra credit
     return
 
 
@@ -186,7 +201,7 @@ def axis_aligned_hypotheses(dataset):
       dataset: The dataset to use to generate hypotheses
     """
 
-    # TODO: complete this function
+    # TODO: Complete this function
     yield AxisAlignedRectangle(0, 0, 0, 0)
 
 
@@ -221,14 +236,34 @@ def rademacher_estimate(dataset, hypothesis_generator, num_samples=500,
       correlation
     """
 
+    # the eventual return the estimate of the rademacher complexity
+    expectation = 0.0
+
     for ii in xrange(num_samples):
         if random_seed != 0:
             rademacher = coin_tosses(len(dataset), random_seed + ii)
         else:
             rademacher = coin_tosses(len(dataset))
 
-        # TODO: complete this function
-    return 0.0
+        e = []
+        hyps = hypothesis_generator(dataset)
+        for h in hyps:
+            summation = 0.0
+            for d, r in zip(dataset, rademacher):
+                x = h.classify(d)
+                
+                # convert classify's return to {-1, 1}
+                if x:
+                    x = 1
+                else:
+                    x = -1
+
+                summation += r * x
+
+            e.append(summation / len(dataset))
+        expectation += max(e)
+
+    return expectation / num_samples
 
 if __name__ == "__main__":
     print("Rademacher correlation of constant classifier %f" %
