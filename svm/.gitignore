@@ -1,0 +1,4 @@
+*.aux
+*.tex.backup
+*.log
+*.pyc
