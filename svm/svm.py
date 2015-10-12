@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+#
+# Starting code from:
+# https://github.com/ezubaric/ml-hw/blob/master/svm/svm.py
+#
+# Modified By:
+# Paul Boschert <paul@boschert.net>, <paul.boschert@colorado.edu>
+# CSCI 5622 - Machine Learning: Support Vector Machines (HW 5)
 
 from numpy import array, zeros
 
@@ -12,7 +19,8 @@ kINSP = array([(1, 8, +1),
                (6, 1, -1),
                (5, 2, -1)])
 
-kSEP = array([(-2, 2, +1),    # 0 - A
+kSEP = array([
+              (-2, 2, +1),    # 0 - A
               (0, 4, +1),     # 1 - B
               (2, 1, +1),     # 2 - C
               (-2, -3, -1),   # 3 - D
@@ -27,18 +35,31 @@ def weight_vector(x, y, alpha):
     """
 
     w = zeros(len(x[0]))
-    # TODO: IMPLEMENT THIS FUNCTION
+
+    # w = alpha * y * x
+    for i, (alphav, yv) in enumerate(zip(alpha, y)):
+        for j, xv in enumerate(x[i]):
+            w[j] += alphav * yv * xv
+
     return w
 
 
-def find_support(x, y, w, b, tolerance=0.001):
+def find_support(x, y, w, b, tolerance = 0.001):
     """
     Given a primal support vector, return the indices for all of the support
     vectors
     """
 
     support = set()
-    # TODO: IMPLEMENT THIS FUNCTION
+
+    # find the positive support vectors: where w dot x + b <= 1
+    # and find where negative support vectors: where w dot x + b <= -1
+    # use the given tolerance because we're dealing with floating point numbers and python likes to
+    # store what seems an infinite amount of precision
+    for i, xv in enumerate(x):
+        if abs(w.dot(xv) + b) <= 1 + abs(tolerance) or abs(w.dot(xv) + b) <= -1 + abs(tolerance):
+            support.add(i)
+
     return support
 
 
@@ -49,5 +70,15 @@ def find_slack(x, y, w, b):
     """
 
     slack = set()
-    # TODO: IMPLEMENT THIS FUNCTION
+
+    # find the values that are essentially mis-classified, 1 y-values have negative w dot
+    # x + b values and -1 y-values have positive w dot x + b values
+    for i, (xv, yv) in enumerate(zip(x, y)):
+        if yv == 1:
+            if w.dot(xv) + b <= 0:
+                slack.add(i)
+        elif yv == -1:
+            if w.dot(xv) + b >= 0:
+                slack.add(i)
+
     return slack
