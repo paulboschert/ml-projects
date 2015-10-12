@@ -28,6 +28,21 @@ kSEP = array([
               (2, -3, -1),    # 5 - F
               ])
 
+class Numbers:
+    """
+    Class to store MNIST data
+    """
+
+    def __init__(self, location):
+        import cPickle, gzip
+
+        # Load the dataset
+        f = gzip.open(location, 'rb')
+        train_set, valid_set, test_set = cPickle.load(f)
+
+        self.train_x, self.train_y = train_set
+        self.test_x, self.test_y = valid_set
+        f.close()
 
 def weight_vector(x, y, alpha):
     """
@@ -82,3 +97,11 @@ def find_slack(x, y, w, b):
                 slack.add(i)
 
     return slack
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='SVM classifier options')
+    parser.add_argument('--limit', type=int, default=-1, help="Restrict training to this many examples")
+    args = parser.parse_args()
+
+    data = Numbers("../data/mnist.pkl.gz")
+
