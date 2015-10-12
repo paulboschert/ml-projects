@@ -4,7 +4,6 @@ import unittest
 from svm import weight_vector, find_support, find_slack, kINSP, kSEP
 from numpy import array, zeros
 
-
 class TestSVM(unittest.TestCase):
     def setUp(self):
         self.sep_x = kSEP[:, 0:2]
