@@ -105,3 +105,21 @@ if __name__ == "__main__":
 
     data = Numbers("../data/mnist.pkl.gz")
 
+'''
+    if args.limit > 0:
+        print("Data limit: %i" % args.limit)
+        knn = Knearest(data.train_x[:args.limit], data.train_y[:args.limit], args.k)
+    else:
+        knn = Knearest(data.train_x, data.train_y, args.k)
+    print("Done loading data")
+
+    confusion = knn.confusion_matrix(data.test_x, data.test_y)
+
+    print("\t" + "\t".join(str(x) for x in xrange(10)))
+    print("".join(["-"] * 90))
+
+    for ii in xrange(10):
+        print("%i:\t" % ii + "\t".join(str(confusion[ii].get(x, 0)) for x in xrange(10)))
+
+    print("Accuracy: %f" % knn.acccuracy(confusion))
+'''
