@@ -1,0 +1,15 @@
+2015-10-19
+==========
+68 people
+8 CS- (tone that's always safe)
+8 CS+ (tone that has a shock)
+8 CS+US
+
+TR time to repeat is 2 seconds (to acquire a whole picture of the brain)
+ another one is .46s
+
+10k voxels (3mm cube)
+
+BOLD
+blood oxygen level dependent
+the response is often much slower (up to 8 seconds)
